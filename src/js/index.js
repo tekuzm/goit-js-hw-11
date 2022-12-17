@@ -1,6 +1,8 @@
-import cardsTpl from '../templates/cards.hbs';
 import '../css/common.css';
-import PixabayApiService from './api';
+import fetchCards from './api';
+import { Notify } from 'notiflix';
+
+// Receive access to HTML elements
 
 const refs = {
   form: document.querySelector('.search-form'),
@@ -11,28 +13,97 @@ const refs = {
   cardsContainer: document.querySelector('.js-cards-container'),
 };
 
-const pixabayApiService = new PixabayApiService();
+// Additional vars declaration
 
-refs.form.addEventListener('submit', onSearch);
+let page = 1;
+
+// 'Load more' btn initial state
+
+refs.loadMoreBtn.style.display = 'none';
+
+// Handle 'Submit' btn event
+
+refs.input.addEventListener('submit', onSearch);
+
+function onSearch(event) {
+  event.preventDefault();
+  clearResults();
+
+  const inputValue = refs.input.value.trim();
+
+  // if input fiels is empty, clear search results
+  if (inputValue) {
+    fetchCards(inputValue, page).then(data => {
+      if (data.totalHits > 0) {
+        createMarkup(data.hits);
+        Notify.success(`Hooray! We found ${data.totalHits} images.`);
+
+        refs.loadMoreBtn.style.display = 'block';
+      } else {
+        Notify.failure(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
+      }
+    });
+  }
+}
+
+// Handle 'Load more' btn event
+
 refs.loadMoreBtn.addEventListener('click', onLoadMore);
 
-let searchQuery = '';
-
-function onSearch(e) {
-  e.preventDefault();
-
-  pixabayApiService.query = e.currentTarget.elements.searchQuery.value;
-  pixabayApiService.resetPage();
-  pixabayApiService.fetchCards(searchQuery).then(hits => console.log(hits));
-}
-
 function onLoadMore() {
-  pixabayApiService.fetchCards(searchQuery).then(hits => console.log(hits));
+  page += 1;
+  refs.loadMoreBtn.style.display = 'none';
+  const inputValue = refs.input.value.trim();
+
+  fetchCards(inputValue, page).then(data => {
+    if (data.totalHits > 40) {
+      refs.loadMoreBtn.style.display = 'block';
+    } else {
+      refs.loadMoreBtn.style.display = 'none';
+      Notify.info("We're sorry, but you've reached the end of search results.");
+    }
+  });
 }
 
-function appendCardsMarkup(cards) {
-  refs.cardsContainer.insertAdjacentHTML('beforeend', cardsTpl(cards));
+// Create image card markup
+
+function createMarkup(images) {
+  const markup = images
+    .map(image => {
+      return `<div class="photo-card">
+      <a href="${image.largeImageURL}">
+        <img src="${image.webformatURL}" alt="${image.tags}" loading="lazy" />
+      </a>
+      <div class="info">
+        <p class="info-item">
+          <b>Likes</b>${image.likes}
+        </p>
+        <p class="info-item">
+          <b>Views</b>
+          ${image.views}
+        </p>
+        <p class="info-item">
+          <b>Comments</b>
+          ${image.comments}
+        </p>
+        <p class="info-item">
+          <b>Downloads</b>
+          ${image.downloads}
+        </p>
+      </div>
+    </div>`;
+    })
+    .join('');
+
+  refs.gallery.innerHTML += markup;
 }
-// Якщо реквест успішний - малюй картки зображень
-// Додай у картку: зображення, кількість лайків, переглядів, коментів, скачувань
-//
+
+// Clear serch results
+
+function clearResults() {
+  refs.gallery.innerHTML = '';
+  refs.loadMoreBtn.style.display = 'none';
+  page = 1;
+}

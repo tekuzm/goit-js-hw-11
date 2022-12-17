@@ -1,40 +1,20 @@
 import axios from 'axios';
 
-export default class PixabayApiService {
-  constructor() {
-    this.searchQuery = '';
-    this.page = 1;
-  }
+export default async function fetchCards(query, page) {
+  const BASE_URL = 'https://pixabay.com/api';
+  const API_KEY = '32114919-b1da84808ca0f604bcef4a7c4';
 
-  fetchCards() {
-    console.log(this);
+  let url = `${BASE_URL}/?key=${API_KEY}&q=${query}&image_type=photo&orientation=horizontal&safesearch=true&per_page=40&page=${page}`;
 
-    const API_KEY = '32114919-b1da84808ca0f604bcef4a7c4';
-
-    const url = `https://pixabay.com/api/?key=${API_KEY}&q=${this.searchQuery}&image_type=photo&orientation=horizontal&safesearch=true&per_page=40&page=${this.page}`;
-
-    return fetch(url)
-      .then(r => r.json())
-      .then(data => {
-        this.incrementPage();
-
-        return data.hits;
-      });
-  }
-
-  incrementPage() {
-    this.page += 1;
-  }
-
-  resetPage() {
-    this.page = 1;
-  }
-
-  get query() {
-    return this.searchQuery;
-  }
-
-  set query(newQuery) {
-    return (this.searchQuery = newQuery);
-  }
+  return await axios
+    .get(url)
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error(`Error!`);
+    })
+    .then(data => {
+      return data;
+    });
 }
