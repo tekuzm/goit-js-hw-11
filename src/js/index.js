@@ -1,4 +1,4 @@
-import '../sass/common.scss';
+import '../sass/index.scss';
 import fetchCards from './api';
 import { Notify } from 'notiflix';
 
