@@ -28,12 +28,12 @@ refs.loadMoreBtn.style.display = 'none';
 refs.form.addEventListener('submit', onSearch);
 
 function onSearch(event) {
+  event.preventDefault();
   if (isLoading) {
     return;
   }
 
   isLoading = true;
-  event.preventDefault();
   clearResults(true);
 
   const inputValue = refs.input.value.trim();
@@ -67,7 +67,6 @@ function onSearch(event) {
 refs.loadMoreBtn.addEventListener('click', onLoadMore);
 
 function onLoadMore() {
-  // debugger;
   page += 1;
   refs.loadMoreBtn.style.display = 'none';
   const inputValue = refs.input.value.trim();
@@ -98,7 +97,8 @@ function createMarkup(images) {
       </a>
       <div class="info">
         <p class="info-item">
-          <b>Likes</b>${image.likes}
+          <b>Likes</b>
+          ${image.likes}
         </p>
         <p class="info-item">
           <b>Views</b>
