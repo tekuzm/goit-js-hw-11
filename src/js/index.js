@@ -15,7 +15,9 @@ const refs = {
 
 // Additional vars declaration
 
+let images;
 let page = 1;
+let isLoading = false;
 
 // 'Load more' btn initial state
 
@@ -23,28 +25,40 @@ refs.loadMoreBtn.style.display = 'none';
 
 // Handle 'Submit' btn event
 
-refs.input.addEventListener('submit', onSearch);
+refs.form.addEventListener('submit', onSearch);
 
 function onSearch(event) {
+  if (isLoading) {
+    return;
+  }
+
+  isLoading = true;
   event.preventDefault();
-  clearResults();
+  clearResults(true);
 
   const inputValue = refs.input.value.trim();
 
   // if input fiels is empty, clear search results
   if (inputValue) {
-    fetchCards(inputValue, page).then(data => {
-      if (data.totalHits > 0) {
-        createMarkup(data.hits);
-        Notify.success(`Hooray! We found ${data.totalHits} images.`);
+    fetchCards(inputValue, page)
+      .then(data => {
+        isLoading = false;
 
-        refs.loadMoreBtn.style.display = 'block';
-      } else {
-        Notify.failure(
-          'Sorry, there are no images matching your search query. Please try again.'
-        );
-      }
-    });
+        if (data.totalHits > 0) {
+          images = data.hits;
+          createMarkup(images);
+          Notify.success(`Hooray! We found ${data.totalHits} images.`);
+
+          refs.loadMoreBtn.style.display = 'block';
+        } else {
+          Notify.failure(
+            'Sorry, there are no images matching your search query. Please try again.'
+          );
+        }
+      })
+      .catch(error => {
+        Notify.failure('Sorry, something went wrong. Try again later.');
+      });
   }
 }
 
@@ -53,17 +67,23 @@ function onSearch(event) {
 refs.loadMoreBtn.addEventListener('click', onLoadMore);
 
 function onLoadMore() {
+  // debugger;
   page += 1;
   refs.loadMoreBtn.style.display = 'none';
   const inputValue = refs.input.value.trim();
 
   fetchCards(inputValue, page).then(data => {
-    if (data.totalHits > 40) {
+    debugger;
+    images = images.concat(data.hits);
+
+    if (images.length < data.totalHits) {
       refs.loadMoreBtn.style.display = 'block';
     } else {
       refs.loadMoreBtn.style.display = 'none';
       Notify.info("We're sorry, but you've reached the end of search results.");
     }
+    clearResults();
+    createMarkup(images);
   });
 }
 
@@ -102,8 +122,10 @@ function createMarkup(images) {
 
 // Clear serch results
 
-function clearResults() {
+function clearResults(toRemoveBtn) {
+  if (toRemoveBtn === true) {
+    refs.loadMoreBtn.style.display = 'none';
+  }
   refs.gallery.innerHTML = '';
-  refs.loadMoreBtn.style.display = 'none';
   page = 1;
 }
